@@ -63,6 +63,7 @@ train:
                 num_layers: 2
                 bidirectional: True
             wave_ar:
+                recurrent: GRU
                 # size_i_cnd: local sync
                 size_i_embed_ar: 256
                 size_h_rnn: 896

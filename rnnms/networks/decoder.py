@@ -10,6 +10,28 @@ import torch.nn.functional as F
 from omegaconf import MISSING
 
 
+def get_rnn_cell(rnn):
+    """Transfer (learned) RNN state to a new RNNCell.
+    """
+
+    rnn_cell = nn.RNNCell(rnn.input_size, rnn.hidden_size)
+    rnn_cell.weight_hh.data = rnn.weight_hh_l0.data
+    rnn_cell.weight_ih.data = rnn.weight_ih_l0.data
+    rnn_cell.bias_hh.data = rnn.bias_hh_l0.data
+    rnn_cell.bias_ih.data = rnn.bias_ih_l0.data
+    return rnn_cell
+
+def get_lstm_cell(lstm):
+    """Transfer (learned) LSTM state to a new LSTMCell.
+    """
+
+    lstm_cell = nn.LSTMCell(lstm.input_size, lstm.hidden_size)
+    lstm_cell.weight_hh.data = lstm.weight_hh_l0.data
+    lstm_cell.weight_ih.data = lstm.weight_ih_l0.data
+    lstm_cell.bias_hh.data = lstm.bias_hh_l0.data
+    lstm_cell.bias_ih.data = lstm.bias_ih_l0.data
+    return lstm_cell
+
 def get_gru_cell(gru):
     """Transfer (learned) GRU state to a new GRUCell.
     """
@@ -26,12 +48,14 @@ def get_gru_cell(gru):
 class ConfC_eAR_GenRNN:
     """Configuration of C_eAR_GenRNN.
     Args:
+        recurrent: recurrent network type (RNN | LSTM | GRU)
         size_i_cnd: size of conditioning input vector
         size_i_embed_ar: size of embedded auto-regressive input vector (embedded sample_t-1)
         size_h_rnn: size of RNN hidden vector
         size_h_fc: size of 2-layer FC's hidden layer
         size_o: size of output energy vector
     """
+    recurrent: str = MISSING
     size_i_cnd: int = MISSING
     size_i_embed_ar: int = MISSING
     size_h_rnn: int = MISSING
@@ -50,13 +74,22 @@ class C_eAR_GenRNN(nn.Module):
     def __init__(self, conf: ConfC_eAR_GenRNN) -> None:
         super().__init__()
 
+        self.conf = conf
+
         # output embedding
         self.size_out = 2**conf.size_o_bit
         self.embedding = nn.Embedding(self.size_out, conf.size_i_embed_ar)
 
         # RNN module: Embedded_sample_t-1 + latent_t-1 => hidden_t
         self.size_h_rnn = conf.size_h_rnn
-        self.rnn = nn.GRU(conf.size_i_embed_ar + conf.size_i_cnd, conf.size_h_rnn, batch_first=True)
+        if   conf.recurrent == "RNN":
+            recurrent = nn.RNN
+        elif conf.recurrent == "LSTM":
+            recurrent = nn.LSTM
+        elif conf.recurrent == "GRU":
+            recurrent = nn.GRU
+        else:
+            raise Exception(f"cell type: {conf.recurrent}")
 
         # FC module: RNN_out => μ-law bits energy
         self.fc = nn.Sequential(
@@ -96,9 +129,18 @@ class C_eAR_GenRNN(nn.Module):
         batch_size = i_cnd_series.size(0)
         # [Batch, T] (initialized as [Batch, 0])
         sample_series = torch.tensor([[] for _ in range(batch_size)], device=i_cnd_series.device)
-        cell = get_gru_cell(self.rnn)
+        if   self.conf.recurrent == "RNN":
+            gen_cell = get_rnn_cell
+        elif self.conf.recurrent == "LSTM":
+            gen_cell = get_lstm_cell
+        elif self.conf.recurrent == "GRU":
+            gen_cell = get_gru_cell
+        else:
+            raise Exception(f"cell type: {self.conf.recurrent}")
+        cell = gen_cell(self.rnn)
         # initialization
         h_rnn_t_minus_1 = torch.zeros(batch_size, self.size_h_rnn, device=i_cnd_series.device)
+        c_rnn_t_minus_1 = torch.zeros(batch_size, self.size_h_rnn, device=i_cnd_series.device)
         # [Batch]
         # nn.Embedding needs LongTensor input
         sample_t_minus_1 = torch.zeros(batch_size, device=i_cnd_series.device, dtype=torch.long)
@@ -114,7 +156,11 @@ class C_eAR_GenRNN(nn.Module):
         for i_cond_t in conditionings:
             # [Batch] => [Batch, size_i_embed_ar]
             i_embed_ar_t = self.embedding(sample_t_minus_1)
-            h_rnn_t = cell(torch.cat((i_embed_ar_t, i_cond_t), dim=1), h_rnn_t_minus_1)
+            if self.conf.recurrent == "LSTM":
+                h_rnn_t, c_rnn_t = cell(torch.cat((i_embed_ar_t, i_cond_t), dim=1), (h_rnn_t_minus_1, c_rnn_t_minus_1))
+                c_rnn_t_minus_1 = c_rnn_t
+            else:
+                h_rnn_t = cell(torch.cat((i_embed_ar_t, i_cond_t), dim=1), h_rnn_t_minus_1)
             o_t = self.fc(h_rnn_t)
             posterior_t = F.softmax(o_t, dim=1)
             dist_t = torch.distributions.Categorical(posterior_t)
@@ -125,5 +171,5 @@ class C_eAR_GenRNN(nn.Module):
             # t => t-1
             sample_t_minus_1 = sample_t
             h_rnn_t_minus_1 = h_rnn_t
-
+            
         return sample_series

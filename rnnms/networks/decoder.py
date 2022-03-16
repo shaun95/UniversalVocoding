@@ -90,6 +90,7 @@ class C_eAR_GenRNN(nn.Module):
             recurrent = nn.GRU
         else:
             raise Exception(f"cell type: {conf.recurrent}")
+        self.rnn = recurrent(conf.size_i_embed_ar + conf.size_i_cnd, conf.size_h_rnn, batch_first=True)
 
         # FC module: RNN_out => μ-law bits energy
         self.fc = nn.Sequential(

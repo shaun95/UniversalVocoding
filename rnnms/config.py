@@ -26,14 +26,10 @@ data:
         mel_stft_stride: "${stride_stft}"
         preprocess:
             target_sr: "${target_sr}"
-            # stft_hop_length: local sync
             win_length: 800
             bits_mulaw: "${bits_mulaw}"
             melspec:
-                # sr: local sync
                 n_fft: 2048
-                # hop_length: local sync
-                # win_length: local sync
                 preemph: 0.97
                 top_db: 80.0
                 ref_db: 20.0
@@ -59,17 +55,13 @@ train:
             bits_mu_law: "${bits_mulaw}"
             upsampling_t: "${stride_stft}"
             prenet:
-                # dim_i: local sync
-                # dim_o: local sync
                 num_layers: 2
                 bidirectional: True
             wave_ar:
                 recurrent: GRU
-                # size_i_cnd: local sync
                 size_i_embed_ar: 256
                 size_h_rnn: 896
                 size_h_fc: 1024
-                # size_o_bit: local sync
         optim:
             learning_rate: 4.0e-4
             sched_decay_rate: 0.5

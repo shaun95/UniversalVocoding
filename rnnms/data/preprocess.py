@@ -3,6 +3,7 @@
 
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Optional
 
 import librosa
 import numpy as np
@@ -35,7 +36,7 @@ class ConfMelspectrogram:
     ref_db: float = MISSING
     n_mels: int = MISSING
     fmin: int = MISSING
-    fmax: int = MISSING
+    fmax: Optional[int] = MISSING
 
 def melspectrogram(wave: np.ndarray, conf: ConfMelspectrogram) -> np.ndarray:
     """wave2mel preprocessing.

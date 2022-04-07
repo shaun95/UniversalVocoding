@@ -24,6 +24,7 @@ class ConfMelspectrogram:
         ref_db:
         n_mels: Domension of mel frequency
         fmin:
+        fmax: Maximum frequency of mel spectrogram
     """
     sr: int = MISSING
     n_fft: int = MISSING
@@ -34,6 +35,7 @@ class ConfMelspectrogram:
     ref_db: float = MISSING
     n_mels: int = MISSING
     fmin: int = MISSING
+    fmax: int = MISSING
 
 def melspectrogram(wave: np.ndarray, conf: ConfMelspectrogram) -> np.ndarray:
     """wave2mel preprocessing.
@@ -54,6 +56,7 @@ def melspectrogram(wave: np.ndarray, conf: ConfMelspectrogram) -> np.ndarray:
         win_length=conf.win_length,
         n_mels=conf.n_mels,
         fmin=conf.fmin, # fmax is default sr/2
+        fmax=conf.fmax,
         norm=1,
         power=1, # amplitude/energy
     )

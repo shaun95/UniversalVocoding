@@ -39,6 +39,7 @@ data:
                 ref_db: 20.0
                 n_mels: "${dim_mel}"
                 fmin: 50
+                fmax: null
     corpus:
         download: False
 train:

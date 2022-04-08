@@ -7,7 +7,6 @@ import os
 from datetime import timedelta
 from dataclasses import dataclass
 
-import torch
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -78,7 +77,6 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
         max_epochs=conf.trainer.max_epochs,
         check_val_every_n_epoch=conf.trainer.val_interval_epoch,
         # logging/checkpointing
-        resume_from_checkpoint=ckpt_and_logging.resume_from_checkpoint,
         default_root_dir=ckpt_and_logging.default_root_dir,
         logger=pl_loggers.TensorBoardLogger(
             ckpt_and_logging.save_dir, ckpt_and_logging.name, ckpt_and_logging.version
@@ -89,8 +87,7 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
     )
 
     # training
-    trainer.fit(model, datamodule=datamodule)
-
+    trainer.fit(model, ckpt_path=ckpt_and_logging.resume_from_checkpoint, datamodule=datamodule)
 
 class CheckpointAndLogging:
     """Generate path of checkpoint & logging.

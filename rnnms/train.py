@@ -87,7 +87,6 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
         callbacks=[ckpt_cb],
         # reload_dataloaders_every_epoch=True,
         profiler=conf.trainer.profiler,
-        progress_bar_refresh_rate=30
     )
 
     # training

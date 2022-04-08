@@ -73,8 +73,7 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
     )
 
     trainer = pl.Trainer(
-        gpus=1 if torch.cuda.is_available() else 0,
-        auto_select_gpus=True,
+        accelerator="auto",
         precision=16,
         max_epochs=conf.trainer.max_epochs,
         check_val_every_n_epoch=conf.trainer.val_interval_epoch,

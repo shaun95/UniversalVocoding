@@ -57,6 +57,13 @@ class MelMulaw(Dataset):
             conf.preprocess.bits_mulaw,
             conf.preprocess.stft_hop_length,
             conf.preprocess.target_sr,
+            conf.preprocess.melspec.n_fft,
+            conf.preprocess.melspec.preemph,
+            conf.preprocess.melspec.top_db,
+            conf.preprocess.melspec.ref_db,
+            conf.preprocess.melspec.n_mels,
+            conf.preprocess.melspec.fmin,
+            conf.preprocess.melspec.fmax,
         )
 
         adress_archive, self._path_contents = dataset_adress(

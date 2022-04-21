@@ -14,7 +14,7 @@ from pytorch_lightning.core.datamodule import LightningDataModule
 from pytorch_lightning.utilities.cloud_io import get_filesystem
 from omegaconf import MISSING
 
-from .model import RNN_MS, ConfRNN_MS
+from .model import RNNMS, ConfRNNMS
 
 
 class Profiler(Enum):
@@ -49,7 +49,7 @@ class ConfTrain:
     """
     ckpt_log: ConfCkptLog = ConfCkptLog()
     trainer: ConfTrainer = ConfTrainer()
-    model: ConfRNN_MS = ConfRNN_MS()
+    model: ConfRNNMS = ConfRNNMS()
 
 
 def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
@@ -62,7 +62,7 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
         conf.ckpt_log.name_version
     )
     # setup
-    model = RNN_MS(conf.model)
+    model = RNNMS(conf.model)
 
     # Save checkpoint as `last.ckpt` every 15 minutes.
     ckpt_cb = ModelCheckpoint(

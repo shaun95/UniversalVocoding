@@ -27,24 +27,25 @@ class ConfOptim:
     sched_decay_step: int = MISSING
 
 @dataclass
-class ConfRNN_MS:
+class ConfRNNMS:
     """Configuration of RNN_MS.
     """
     sampling_rate: int = MISSING  # Audio sampling rate
     vocoder: ConfRNNMSVocoder = ConfRNNMSVocoder()
     optim: ConfOptim = ConfOptim()
 
-class RNN_MS(pl.LightningModule):
+class RNNMS(pl.LightningModule):
     """RNN_MS, universal neural vocoder.
     """
 
-    def __init__(self, conf: ConfRNN_MS):
+    def __init__(self, conf: ConfRNNMS):
         super().__init__()
         self.save_hyperparameters()
         self.conf = conf
         self.rnnms = RNNMSVocoder(conf.vocoder)
 
     def forward(self, _: Tensor, mels: Tensor):
+        """Forward PL API"""
         return self.rnnms.generate(mels)
 
     def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int):
@@ -79,8 +80,10 @@ class RNN_MS(pl.LightningModule):
         #   approach B: Scale (max>1 => series/max)
         # In this implementation, already scaled in [-1, 1].
 
-        # [PyTorch](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_audio)
-        # add_audio(tag: str, snd_tensor: Tensor(1, L), global_step: Optional[int] = None, sample_rate: int = 44100)
+        # [PyTorch](https://pytorch.org/docs/stable/tensorboard.html#torch.
+        #     utils.tensorboard.writer.SummaryWriter.add_audio)
+        # add_audio(tag: str, snd_tensor: Tensor(1, L),
+        #     global_step: Optional[int] = None, sample_rate: int = 44100)
         self.logger.experiment.add_audio(
             f"audio_{batch_idx}",
             wave,

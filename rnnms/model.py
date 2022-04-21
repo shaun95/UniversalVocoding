@@ -44,11 +44,11 @@ class RNNMS(pl.LightningModule):
         self.conf = conf
         self.rnnms = RNNMSVocoder(conf.vocoder)
 
-    def forward(self, _: Tensor, mels: Tensor):
+    def forward(self, mels: Tensor):
         """Forward PL API"""
         return self.rnnms.generate(mels)
 
-    def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int):
+    def training_step(self, batch: Tuple[Tensor, Tensor]):
         """Supervised learning.
         """
 
@@ -66,19 +66,7 @@ class RNNMS(pl.LightningModule):
         """
 
         _, mels = batch
-
-        # loss calculation
-        # For validation, AR generation can be applied, so cannot use `training_step`.
-        # sampling+ARでbits_energy_seriesを作りつつ、サンプルじゃなくてそいつらを評価?
-        # o_G = self.training_step(batch, batch_idx, 0)
-
-        # sample generation
         wave = self.rnnms.generate(mels)
-
-        # [-1, 1] restriction
-        #   approach A: Clip (x>1 => x=1)
-        #   approach B: Scale (max>1 => series/max)
-        # In this implementation, already scaled in [-1, 1].
 
         # [PyTorch](https://pytorch.org/docs/stable/tensorboard.html#torch.
         #     utils.tensorboard.writer.SummaryWriter.add_audio)

@@ -4,14 +4,17 @@
 from typing import Tuple
 from dataclasses import dataclass
 
-from torch import Tensor
+import numpy as np
+from torch import Tensor, FloatTensor
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 import pytorch_lightning as pl
 from omegaconf import MISSING
+import librosa
 
 from .networks.vocoder import RNNMSVocoder, ConfRNNMSVocoder
+from .data.preprocess import melspectrogram, ConfMelspectrogram
 
 
 @dataclass
@@ -30,9 +33,10 @@ class ConfOptim:
 class ConfRNNMS:
     """Configuration of RNN_MS.
     """
-    sampling_rate: int = MISSING  # Audio sampling rate
+    sampling_rate: int = MISSING
     vocoder: ConfRNNMSVocoder = ConfRNNMSVocoder()
     optim: ConfOptim = ConfOptim()
+    wav2mel: ConfMelspectrogram = ConfMelspectrogram()
 
 class RNNMS(pl.LightningModule):
     """RNN_MS, universal neural vocoder.
@@ -98,3 +102,23 @@ class RNNMS(pl.LightningModule):
             "optimizer": optim,
             "lr_scheduler": sched,
         }
+
+    def predict(self, mels: Tensor) -> Tuple[Tensor, int]:
+        """Convert mel-spectrogram into a waveform"""
+        return self(mels), self.conf.sampling_rate
+
+    def wav2mel(self, wave: np.ndarray, orig_sr: int) -> Tensor:
+        """Convert a PCM waveform into a log-mel spectrogram
+
+        Args:
+            wave - Target waveform
+            orig_sr - Sampling rate of the original wave
+        Returns: log-mel spectrogram of resampled waveform
+        """
+        wave_resampled = librosa.resample(wave, orig_sr=orig_sr, target_sr=self.conf.sampling_rate)
+        return FloatTensor(melspectrogram(wave_resampled, self.conf.wav2mel).T)
+
+    def sample_wave(self) -> Tuple[np.ndarray, int]:
+        """Sample speech"""
+        wave, sr = librosa.load(librosa.example("libri2"), sr=self.conf.sampling_rate)
+        return wave, sr

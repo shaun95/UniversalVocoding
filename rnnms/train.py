@@ -24,18 +24,6 @@ class Profiler(Enum):
 
 
 @dataclass
-class ConfTrainer:
-    """Configuration of trainer.
-    Args:
-        max_epochs: Number of maximum training epoch
-        val_interval_epoch: Interval epoch between validation
-        profiler: Profiler setting
-    """
-    max_epochs: int = MISSING
-    val_interval_epoch: int = MISSING
-    profiler: Optional[Profiler] = MISSING
-
-@dataclass
 class ConfCkptLog:
     """Configuration of checkpointing and logging.
     """
@@ -46,13 +34,18 @@ class ConfCkptLog:
 @dataclass
 class ConfTrain:
     """Configuration of train.
+    Args:
+        max_epochs: Number of maximum training epoch
+        val_interval_epoch: Interval epoch between validation
+        profiler: Profiler setting
     """
+    max_epochs: int = MISSING
+    val_interval_epoch: int = MISSING
+    profiler: Optional[Profiler] = MISSING
     ckpt_log: ConfCkptLog = ConfCkptLog()
-    trainer: ConfTrainer = ConfTrainer()
-    model: ConfRNNMS = ConfRNNMS()
 
 
-def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
+def train(model: RNNMS, conf: ConfTrain, datamodule: LightningDataModule) -> None:
     """Train RNN_MS on PyTorch-Lightning.
     """
 
@@ -61,8 +54,6 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
         conf.ckpt_log.name_exp,
         conf.ckpt_log.name_version
     )
-    # setup
-    model = RNNMS(conf.model)
 
     # Save checkpoint as `last.ckpt` every 15 minutes.
     ckpt_cb = ModelCheckpoint(
@@ -74,8 +65,8 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
     trainer = pl.Trainer(
         accelerator="auto",
         precision=16,
-        max_epochs=conf.trainer.max_epochs,
-        check_val_every_n_epoch=conf.trainer.val_interval_epoch,
+        max_epochs=conf.max_epochs,
+        check_val_every_n_epoch=conf.val_interval_epoch,
         # logging/checkpointing
         default_root_dir=ckpt_and_logging.default_root_dir,
         logger=pl_loggers.TensorBoardLogger(
@@ -83,7 +74,7 @@ def train(conf: ConfTrain, datamodule: LightningDataModule) -> None:
         ),
         callbacks=[ckpt_cb],
         # reload_dataloaders_every_epoch=True,
-        profiler=conf.trainer.profiler,
+        profiler=conf.profiler,
     )
 
     # training

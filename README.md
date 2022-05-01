@@ -43,7 +43,7 @@ python -m rnnms.main_train
 
 For arguments, check [./rnnms/config.py](https://github.com/tarepan/UniversalVocoding/blob/main/rnnms/config.py)  
 
-### Advanced: Other datasets <!-- omit in toc -->
+#### Advanced: Other datasets <!-- omit in toc -->
 You can switch dataset with arguments.  
 All [`speechcorpusy`](https://github.com/tarepan/speechcorpusy)'s preset corpuses are supported.  
 
@@ -52,7 +52,7 @@ All [`speechcorpusy`](https://github.com/tarepan/speechcorpusy)'s preset corpuse
 python -m rnnms.main_train data.data_name=LJ
 ```
 
-### Advanced: Custom dataset <!-- omit in toc -->
+#### Advanced: Custom dataset <!-- omit in toc -->
 Copy [`rnnms.main_train`] and replace DataModule.  
 
 ```python
@@ -62,6 +62,11 @@ Copy [`rnnms.main_train`] and replace DataModule.
 ```
 
 [`rnnms.main_train`]:https://github.com/tarepan/UniversalVocoding/blob/main/rnnms/main_train.py
+
+### 4. Inference <!-- omit in toc -->
+```bash
+python -m rnnms.main_inference model_ckpt_path=XXX i_wav_path=YYY o_wav_path=ZZZ
+```
 
 ## System Details
 ### Model <!-- omit in toc -->

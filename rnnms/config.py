@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from omegaconf import OmegaConf, SCMode, MISSING
 
 from .data.datamodule import ConfData
+from .data.preprocess import ConfMelspectrogram
 from .train import ConfTrain
+from .model import ConfRNNMS
 
 
 CONF_DEFAULT_STR = """
@@ -14,6 +16,38 @@ target_sr: 16000
 bits_mulaw: 10
 dim_mel: 80
 stride_stft: 200
+win_length: 800
+melspec:
+    sr: "${target_sr}"
+    n_fft: 2048
+    hop_length: "${stride_stft}"
+    win_length: "${win_length}"
+    preemph: 0.97
+    top_db: 80.0
+    ref_db: 20.0
+    n_mels: "${dim_mel}"
+    fmin: 50
+    fmax: null
+model:
+    sampling_rate: "${target_sr}"
+    vocoder:
+        dim_i_feature: "${dim_mel}"
+        dim_voc_latent: 256
+        bits_mu_law: "${bits_mulaw}"
+        upsampling_t: "${stride_stft}"
+        prenet:
+            num_layers: 2
+            bidirectional: True
+        wave_ar:
+            recurrent: GRU
+            size_i_embed_ar: 256
+            size_h_rnn: 896
+            size_h_fc: 1024
+    optim:
+        learning_rate: 4.0e-4
+        sched_decay_rate: 0.5
+        sched_decay_step: 25000
+    wav2mel: "${melspec}"
 data:
     data_name: LJ
     adress_data_root: null
@@ -26,46 +60,19 @@ data:
         mel_stft_stride: "${stride_stft}"
         preprocess:
             target_sr: "${target_sr}"
-            win_length: 800
+            win_length: "${win_length}"
             bits_mulaw: "${bits_mulaw}"
-            melspec:
-                n_fft: 2048
-                preemph: 0.97
-                top_db: 80.0
-                ref_db: 20.0
-                n_mels: "${dim_mel}"
-                fmin: 50
-                fmax: null
+            melspec: "${melspec}"
     corpus:
         download: False
 train:
+    max_epochs: 500
+    val_interval_epoch: 4
+    profiler: null
     ckpt_log:
         dir_root: logs
         name_exp: default
         name_version: version_-1
-    trainer:
-        max_epochs: 500
-        val_interval_epoch: 4
-        profiler: null
-    model:
-        sampling_rate: "${target_sr}"
-        vocoder:
-            dim_i_feature: "${dim_mel}"
-            dim_voc_latent: 256
-            bits_mu_law: "${bits_mulaw}"
-            upsampling_t: "${stride_stft}"
-            prenet:
-                num_layers: 2
-                bidirectional: True
-            wave_ar:
-                recurrent: GRU
-                size_i_embed_ar: 256
-                size_h_rnn: 896
-                size_h_fc: 1024
-        optim:
-            learning_rate: 4.0e-4
-            sched_decay_rate: 0.5
-            sched_decay_step: 25000
 """
 
 
@@ -79,6 +86,7 @@ class ConfGlobal:
         bits_mulaw: Bit depth of μ-law compressed waveform
         dim_mel: Dimension of mel-spectrogram
         stride_stft: STFT stride
+        win_length: STFT window length
     """
     seed: int = MISSING
     path_extend_conf: Optional[str] = MISSING
@@ -86,6 +94,9 @@ class ConfGlobal:
     bits_mulaw: int = MISSING
     dim_mel: int = MISSING
     stride_stft: int = MISSING
+    win_length: int = MISSING
+    melspec: ConfMelspectrogram = ConfMelspectrogram()
+    model: ConfRNNMS = ConfRNNMS()
     data: ConfData = ConfData()
     train: ConfTrain = ConfTrain()
 

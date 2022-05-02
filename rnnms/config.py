@@ -104,9 +104,11 @@ class ConfGlobal:
 def conf_default() -> ConfGlobal:
     """Default global configuration.
     """
+    default_conf = OmegaConf.create(CONF_DEFAULT_STR)
+    OmegaConf.resolve(default_conf)
     return OmegaConf.merge(
         OmegaConf.structured(ConfGlobal),
-        OmegaConf.create(CONF_DEFAULT_STR)
+        default_conf
     )
 
 T = TypeVar('T')

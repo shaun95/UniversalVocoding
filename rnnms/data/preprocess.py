@@ -19,18 +19,16 @@ class ConfMelspectrogram:
         sr: Sampling rate of input waveform
         n_fft: STFT sample length
         hop_length: STFT hop length
-        win_length: STFT window length
         preemph:
         top_db:
         ref_db:
         n_mels: Domension of mel frequency
-        fmin:
+        fmin: Minumum frequency of mel spectrogram
         fmax: Maximum frequency of mel spectrogram
     """
     sr: int = MISSING
     n_fft: int = MISSING
     hop_length: int = MISSING
-    win_length: int = MISSING
     preemph: float = MISSING
     top_db: float = MISSING
     ref_db: float = MISSING
@@ -43,7 +41,6 @@ def melspectrogram(wave: np.ndarray, conf: ConfMelspectrogram) -> np.ndarray:
 
     wave => preemphasised wave => mel => logmel => normalization
     mel: lower-cut log-mel amplitude spectrogram
-    n_fft (2048) >> win_length (800), so information is came from only center of bin (1/4 overlap).
 
     Args:
         wave: waveform
@@ -54,9 +51,8 @@ def melspectrogram(wave: np.ndarray, conf: ConfMelspectrogram) -> np.ndarray:
         sr=conf.sr,
         n_fft=conf.n_fft,
         hop_length=conf.hop_length,
-        win_length=conf.win_length,
         n_mels=conf.n_mels,
-        fmin=conf.fmin, # fmax is default sr/2
+        fmin=conf.fmin,
         fmax=conf.fmax,
         norm=1,
         power=1, # amplitude/energy

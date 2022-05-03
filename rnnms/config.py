@@ -15,13 +15,12 @@ path_extend_conf: null
 target_sr: 16000
 bits_mulaw: 10
 dim_mel: 80
-stride_stft: 200
 win_length: 800
+stride_stft: 200
 melspec:
     sr: "${target_sr}"
-    n_fft: 2048
+    n_fft: "${win_length}"
     hop_length: "${stride_stft}"
-    win_length: "${win_length}"
     preemph: 0.97
     top_db: 80.0
     ref_db: 20.0

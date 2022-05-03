@@ -65,8 +65,8 @@ data:
     corpus:
         download: False
 train:
-    max_epochs: 500
-    val_interval_epoch: 4
+    max_epochs: 2000
+    val_interval_epoch: 20
     profiler: null
     ckpt_log:
         dir_root: logs

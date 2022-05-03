@@ -5,7 +5,7 @@ from typing import Tuple
 from dataclasses import dataclass
 
 import numpy as np
-from torch import Tensor, FloatTensor
+from torch import Tensor, FloatTensor, reshape
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
@@ -49,7 +49,13 @@ class RNNMS(pl.LightningModule):
         self.rnnms = RNNMSVocoder(conf.vocoder)
 
     def forward(self, mels: Tensor):
-        """Forward PL API"""
+        """Generate a waveform from a log-mel spectrogram.
+
+        Args:
+            mels::Tensor[Batch==1, TimeMel, Freq] - Input log-mel spectrogram
+        Returns:
+            Tensor[Batch==1, TimeWave] - PCM waveform
+        """
         return self.rnnms.generate(mels)
 
     def training_step(self, batch: Tuple[Tensor, Tensor]):
@@ -104,19 +110,27 @@ class RNNMS(pl.LightningModule):
         }
 
     def predict(self, mels: Tensor) -> Tuple[Tensor, int]:
-        """Convert mel-spectrogram into a waveform"""
+        """Generate a waveform from a log-mel spectrogram.
+
+        Args:
+            mels::Tensor[Batch==1, TimeMel, Freq] - Input log-mel spectrogram
+        Returns:
+            (Tensor[Batch==1, TimeWave], sr) - PCM waveform and its sampling rate
+        """
         return self(mels), self.conf.sampling_rate
 
     def wav2mel(self, wave: np.ndarray, orig_sr: int) -> Tensor:
-        """Convert a PCM waveform into a log-mel spectrogram
+        """Convert a numpy PCM waveform into a PyTorch batched log-mel spectrogram
 
         Args:
-            wave - Target waveform
+            wave::(TimeWave,) - Target waveform
             orig_sr - Sampling rate of the original wave
-        Returns: log-mel spectrogram of resampled waveform
+        Returns::(Batch==1, TimeMel, Freq) - Batched log-mel spectrogram of resampled waveform
         """
         wave_resampled = librosa.resample(wave, orig_sr=orig_sr, target_sr=self.conf.sampling_rate)
-        return FloatTensor(melspectrogram(wave_resampled, self.conf.wav2mel).T)
+        mel = FloatTensor(melspectrogram(wave_resampled, self.conf.wav2mel).T)
+        mels = reshape(mel, (1, mel.shape[0], -1))
+        return mels
 
     def sample_wave(self) -> Tuple[np.ndarray, int]:
         """Sample speech"""

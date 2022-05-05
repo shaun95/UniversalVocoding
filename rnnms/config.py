@@ -100,28 +100,15 @@ class ConfGlobal:
     train: ConfTrain = ConfTrain()
 
 
-def conf_default() -> ConfGlobal:
-    """Default global configuration.
-    """
-    default_conf = OmegaConf.create(CONF_DEFAULT_STR)
-    OmegaConf.resolve(default_conf)
-    return OmegaConf.merge(
-        OmegaConf.structured(ConfGlobal),
-        default_conf
-    )
-
 T = TypeVar('T')
-def gen_load_conf(gen_conf_default: Callable[[], T], ) -> Callable[[], T]:
+def gen_load_conf() -> Callable[[], T]:
     """Generate 'Load configuration type-safely' function.
 
     Priority: CLI args > CLI-specified config yaml > Default
-
-    Args:
-        gen_conf_default: Function which generate default structured config
     """
 
     def generated_load_conf() -> T:
-        default = gen_conf_default()
+        default = OmegaConf.create(CONF_DEFAULT_STR)
         cli = OmegaConf.from_cli()
         extends_path = cli.get("path_extend_conf", None)
         if extends_path:
@@ -129,6 +116,11 @@ def gen_load_conf(gen_conf_default: Callable[[], T], ) -> Callable[[], T]:
             conf_final = OmegaConf.merge(default, extends, cli)
         else:
             conf_final = OmegaConf.merge(default, cli)
+        OmegaConf.resolve(conf_final)
+        conf_structured = OmegaConf.merge(
+            OmegaConf.structured(ConfGlobal),
+            conf_final
+        )
 
         # Design Note -- OmegaConf instance v.s. DataClass instance --
         #   OmegaConf instance has runtime overhead in exchange for type safety.
@@ -144,10 +136,10 @@ def gen_load_conf(gen_conf_default: Callable[[], T], ) -> Callable[[], T]:
 
         # `.to_container()` with `SCMode.INSTANTIATE` resolve interpolations and check MISSING.
         # It is equal to whole validation.
-        return OmegaConf.to_container(conf_final, structured_config_mode=SCMode.INSTANTIATE)
+        return OmegaConf.to_container(conf_structured, structured_config_mode=SCMode.INSTANTIATE)
 
     return generated_load_conf
 
-load_conf = gen_load_conf(conf_default)
+load_conf = gen_load_conf()
 """Load configuration type-safely.
 """
